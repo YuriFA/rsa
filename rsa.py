@@ -19,7 +19,7 @@ def milli_rabbin_test(n):
 			continue
 
 		for j in range(s - 1):
-			x = (x ** 2) % n
+			x = (x * x) % n
 			# print(x)
 			if(x == 1):
 				return False
@@ -43,6 +43,23 @@ def gcd(x, y):
 		return y
 	return gcd( y % x, x)
 
+def mmi(a, m):
+	"""modular multiplicative inverse
+			a*x = 1 (mod m)
+			return x
+	"""
+	t, newt = 0, 1
+	r, newr = m, a
+	while newr != 0:
+		quotient = r // newr
+		r, newr = newr, r - quotient * newr
+		t, newt = newt, t - quotient * newt
+	if r > 1:
+		return("a is not invertible")
+	if t < 0:
+		t += m
+	return t
+
 if __name__ == '__main__':
 	p = rand_prime(BIT_COUNT)
 	q = rand_prime(BIT_COUNT)
@@ -53,5 +70,5 @@ if __name__ == '__main__':
 	while gcd(t, e) != 1:
 		e = random.randint(1, t)
 
-	# print(p, q)
-	print(t, e)
+	d = mmi(e, t)
+	print(d, e, t)
