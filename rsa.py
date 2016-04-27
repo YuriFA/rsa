@@ -60,6 +60,13 @@ def mmi(a, m):
 		t += m
 	return t
 
+def encrypt(text, e, n):
+	return pow(int.from_bytes(text.encode(), byteorder='big', signed=False), e, n)
+
+def decrypt(enc_text, d, n):
+	dec = pow(enc_text, d, n)
+	return dec.to_bytes((dec.bit_length() // 8) + 1, byteorder='big').decode()
+
 if __name__ == '__main__':
 	p = rand_prime(BIT_COUNT)
 	q = rand_prime(BIT_COUNT)
@@ -71,4 +78,9 @@ if __name__ == '__main__':
 		e = random.randint(1, t)
 
 	d = mmi(e, t)
-	print(d, e, t)
+	# print(n, d, e)
+	text = 'Hello World!!!'
+	enc = encrypt(text, e, n)
+	dec = decrypt(enc, d, n)
+	print(text, enc, dec)
+
