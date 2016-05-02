@@ -110,12 +110,10 @@ if __name__ == '__main__':
 		e = randint_prime(1, t)
 
 	d = mmi(e, t)
-
-	a = pow(123, e, n)
-
 	dp = d % (p - 1)
 	dq = d % (q - 1)
 	qinv = mmi(q, p)
+
 	encrypt('text.txt', e, n)
 	dec = decrypt(DEC_PATH, dp, dq, p, q, qinv)
 	print(dec)
