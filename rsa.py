@@ -99,20 +99,6 @@ def decrypt(dec_path, dp, dq, p, q, qinv):
 		handle.write(dec)
 	return dec
 
-def decrypt_old(dec_path, d, n):
-	dec = ''
-	with open(ENC_PATH, 'rb') as handle:
-		while True:
-			read_block = handle.read(BLOCK_SIZE)
-			if len(read_block) == 0: break
-			enc_block = int.from_bytes(read_block, byteorder='big', signed=False)
-			m = pow(enc_block, d, n)
-			dec_block = m.to_bytes((m.bit_length() // 8) + 1, byteorder='big').decode()
-			dec += dec_block
-	with open(dec_path, 'w') as handle:
-		handle.write(dec)
-	return dec
-
 if __name__ == '__main__':
 	p = rand_prime(BIT_COUNT)
 	q = rand_prime(BIT_COUNT, not_allowed=[p])
