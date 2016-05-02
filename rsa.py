@@ -1,7 +1,8 @@
 from functools import partial
 import random
+import timeit
 
-BIT_COUNT = 32
+BIT_COUNT = 256
 BLOCK_SIZE = (BIT_COUNT + BIT_COUNT) // 8
 
 ENC_PATH = 'encrypt.bin'
@@ -24,7 +25,6 @@ def milli_rabbin_test(n):
 
 		for j in range(s - 1):
 			x = (x * x) % n
-			# print(x)
 			if(x == 1):
 				return False
 			if(x == n - 1):
@@ -34,11 +34,18 @@ def milli_rabbin_test(n):
 
 	return True
 
-def rand_prime(bit_count=10):
+def rand_prime(bit_count, not_allowed=[]):
 	bit_count -= 1
 	rand_num = random.getrandbits(bit_count) | (1 << bit_count)
-	while not(milli_rabbin_test(rand_num)):
+	while not(milli_rabbin_test(rand_num)) or rand_num in not_allowed:
 		rand_num += 1
+
+	return rand_num
+
+def randint_prime(min, max):
+	rand_num = random.randint(min, max)
+	while not(milli_rabbin_test(rand_num)):
+		rand_num = random.randint(min, max)
 	return rand_num
 
 def gcd(x, y):
@@ -69,11 +76,10 @@ def encrypt(text_path, e, n):
 		for block in iter(partial(handle.read, BLOCK_SIZE), ""):
 			text += block
 	with open(ENC_PATH, 'wb+') as handle:
-		for i in range(0, len(text), BLOCK_SIZE):
-			sliced = text[i:i + min(len(text), BLOCK_SIZE)].encode()
-			print(int.from_bytes(sliced, byteorder='big', signed=False))
+		for i in range(0, len(text), BLOCK_SIZE-1):
+			sliced = text[i:i + min(len(text), BLOCK_SIZE-1)].encode()
 			enc_block = pow(int.from_bytes(sliced, byteorder='big', signed=False), e, n)
-			print('enc: eb = ', enc_block)
+			print(enc_block.to_bytes(BLOCK_SIZE, byteorder='big'))
 			handle.write(enc_block.to_bytes(BLOCK_SIZE, byteorder='big'))
 
 def decrypt(dec_path, dp, dq, p, q, qinv):
@@ -83,12 +89,10 @@ def decrypt(dec_path, dp, dq, p, q, qinv):
 			read_block = handle.read(BLOCK_SIZE)
 			if len(read_block) == 0: break
 			enc_block = int.from_bytes(read_block, byteorder='big', signed=False)
-			# print('dec: eb = ', enc_block)
 			m1 = pow(enc_block, dp, p)
 			m2 = pow(enc_block, dq, q)
 			h = (qinv * (m1 - m2)) % p
 			m = m2 + h * q
-			print(m, (m.bit_length() // 8) + 1, m.bit_length())
 			dec_block = m.to_bytes((m.bit_length() // 8) + 1, byteorder='big').decode()
 			dec += dec_block
 	with open(dec_path, 'w') as handle:
@@ -102,9 +106,7 @@ def decrypt_old(dec_path, d, n):
 			read_block = handle.read(BLOCK_SIZE)
 			if len(read_block) == 0: break
 			enc_block = int.from_bytes(read_block, byteorder='big', signed=False)
-			print('dec: eb = ', enc_block)
 			m = pow(enc_block, d, n)
-			print(m, (m.bit_length() // 8) + 1, m.bit_length())
 			dec_block = m.to_bytes((m.bit_length() // 8) + 1, byteorder='big').decode()
 			dec += dec_block
 	with open(dec_path, 'w') as handle:
@@ -113,22 +115,21 @@ def decrypt_old(dec_path, d, n):
 
 if __name__ == '__main__':
 	p = rand_prime(BIT_COUNT)
-	q = rand_prime(BIT_COUNT)
+	q = rand_prime(BIT_COUNT, not_allowed=[p])
 	n = p * q
 	t = (p - 1) * (q - 1)
 
-	e = 65537
+	e = randint_prime(1, t)
 	while gcd(t, e) != 1:
-		e = random.randint(1, t)
+		e = randint_prime(1, t)
 
 	d = mmi(e, t)
+
+	a = pow(123, e, n)
 
 	dp = d % (p - 1)
 	dq = d % (q - 1)
 	qinv = mmi(q, p)
-
-	print(e, d, n)
 	encrypt('text.txt', e, n)
-	# dec = decrypt(DEC_PATH, dp, dq, p, q, qinv)
-	dec = decrypt_old(DEC_PATH, d, n)
+	dec = decrypt(DEC_PATH, dp, dq, p, q, qinv)
 	print(dec)
